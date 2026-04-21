@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VIRTU VR &#8212; Система управления</title>
+<title>VIRTU VR — Система управления</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -22,4 +22,42 @@ body{font-family:'Inter',system-ui,sans-serif;background:#f5f7fa;color:#1a1a2e;m
 .card-content::before{background:linear-gradient(90deg,#ec4899,#f472b6)}
 .card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.08);border-color:#c7d2fe}
 .card:hover::before{opacity:1}
-.card-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:ce
+.card-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 20px}
+.card-crm .card-icon{background:linear-gradient(135deg,#eef2ff,#e0e7ff)}
+.card-content .card-icon{background:linear-gradient(135deg,#fdf2f8,#fce7f3)}
+.card-title{font-size:20px;font-weight:700;margin-bottom:10px}
+.card-crm .card-title{color:#4f46e5}
+.card-content .card-title{color:#db2777}
+.card-desc{color:#64748b;font-size:14px;line-height:1.65}
+.card-arrow{margin-top:20px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;opacity:0;transform:translateX(-8px);transition:all .35s}
+.card-crm .card-arrow{color:#6366f1}
+.card-content .card-arrow{color:#ec4899}
+.card:hover .card-arrow{opacity:1;transform:translateX(0)}
+.footer{margin-top:64px;color:#94a3b8;font-size:12px;font-weight:400;letter-spacing:.5px}
+@media(max-width:680px){.cards{flex-direction:column;align-items:center}.card{width:100%;max-width:340px}.logo{font-size:40px}}
+</style>
+</head>
+<body>
+<div class="bg-blur"></div>
+<div class="bg-blur2"></div>
+<div class="container">
+  <div class="logo">VIRTU <span>VR</span></div>
+  <div class="sub">Система управления бизнесом</div>
+  <div class="cards">
+    <a href="crm.html" class="card card-crm">
+      <div class="card-icon">📊</div>
+      <div class="card-title">CRM</div>
+      <div class="card-desc">Лиды, клиенты, сделки, отзывы. Канбан-доска и аналитика.</div>
+      <div class="card-arrow">Открыть →</div>
+    </a>
+    <a href="content.html" class="card card-content">
+      <div class="card-icon">🎬</div>
+      <div class="card-title">Фабрика контента</div>
+      <div class="card-desc">Контент-план, календарь, шаблоны, метрики по каналам.</div>
+      <div class="card-arrow">Открыть →</div>
+    </a>
+  </div>
+  <div class="footer">VIRTU VR × ИИщенко LAB · 2026</div>
+</div>
+</body>
+</html>
