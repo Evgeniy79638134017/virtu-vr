@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIRTU VR — Система управления</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',sans-serif; background:#0a0e27; color:#e0e0e0; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+.container { text-align:center; max-width:700px; padding:40px; }
+.logo { font-size:48px; font-weight:900; margin-bottom:8px; }
+.logo span { color:#ff4081; }
+.sub { color:#888; font-size:16px; margin-bottom:60px; }
+.cards { display:flex; gap:30px; justify-content:center; flex-wrap:wrap; }
+.card { background:linear-gradient(135deg, #1a1f3a, #141829); border:1px solid #2a2f4a; border-radius:16px; padding:40px 30px; width:280px; text-decoration:none; color:#e0e0e0; transition:all .3s; cursor:pointer; }
+.card:hover { border-color:#ff4081; transform:translateY(-4px); box-shadow:0 8px 30px rgba(255,64,129,.2); }
+.card-icon { font-size:48px; margin-bottom:16px; }
+.card-title { font-size:22px; font-weight:700; margin-bottom:8px; }
+.card-desc { color:#888; font-size:14px; line-height:1.5; }
+.card-crm .card-title { color:#ff4081; }
+.card-content .card-title { color:#e040fb; }
+.footer { margin-top:60px; color:#555; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">VIRTU <span>VR</span></div>
+  <div class="sub">Система управления бизнесом</div>
+  <div class="cards">
+    <a href="crm.html" class="card card-crm">
+      <div class="card-icon">📊</div>
+      <div class="card-title">CRM</div>
+      <div class="card-desc">Лиды, клиенты, сделки, отзывы. Канбан-доска и аналитика.</div>
+    </a>
+    <a href="content.html" class="card card-content">
+      <div class="card-icon">🎬</div>
+      <div class="card-title">Фабрика контента</div>
+      <div class="card-desc">Контент-план, календарь, шаблоны, метрики по каналам.</div>
+    </a>
+  </div>
+  <div class="footer">VIRTU VR × ИИщенко LAB · 2026</div>
+</div>
+</body>
+</html>
