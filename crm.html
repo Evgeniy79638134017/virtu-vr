@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIRTU VR — CRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#0f1923; color:#e0e6ed; display:flex; height:100vh; overflow:hidden; }
+
+  /* Sidebar */
+  .sidebar { width:220px; background:#1a2940; border-right:1px solid #2a3a50; display:flex; flex-direction:column; flex-shrink:0; }
+  .sidebar-logo { padding:20px 16px; border-bottom:1px solid #2a3a50; }
+  .sidebar-logo h1 { font-size:18px; color:#fff; } .sidebar-logo h1 span { color:#f48fb1; }
+  .sidebar-logo .sub { font-size:11px; color:#607d8b; margin-top:2px; }
+  .nav { flex:1; padding:12px 0; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 16px; cursor:pointer; font-size:13px; color:#8899aa; transition:all .15s; border-left:3px solid transparent; }
+  .nav-item:hover { color:#ccc; background:rgba(255,255,255,.03); }
+  .nav-item.active { color:#fff; background:rgba(255,255,255,.06); border-left-color:#f48fb1; }
+  .nav-item .icon { width:20px; text-align:center; font-size:15px; }
+  .nav-item .badge { margin-left:auto; background:#880e4f; color:#f48fb1; font-size:10px; padding:2px 7px; border-radius:10px; font-weight:700; }
+  .sidebar-footer { padding:12px 16px; border-top:1px solid #2a3a50; }
+  .loc-select { width:100%; background:#0f1923; color:#e0e6ed; border:1px solid #2a3a50; border-radius:6px; padding:6px 8px; font-size:12px; cursor:pointer; }
+
+  /* Main */
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .topbar { padding:14px 24px; border-bottom:1px solid #2a3a50; display:flex; align-items:center; justify-content:space-between; background:#1a2940; }
+  .topbar h2 { font-size:16px; color:#fff; }
+  .topbar-actions { display:flex; gap:8px; }
+  .btn { padding:7px 16px; border-radius:8px; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
+  .btn-primary { background:#f48fb1; color:#880e4f; } .btn-primary:hover { background:#f06292; }
+  .btn-secondary { background:#2a3a50; color:#e0e6ed; } .btn-secondary:hover { background:#3a4a60; }
+  .btn-sm { padding:4px 10px; font-size:11px; }
+  .content { flex:1; overflow-y:auto; padding:20px 24px; }
+
+  /* Stats bar */
+  .stats { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+  .stat-card { background:#1a2940; border:1px solid #2a3a50; border-radius:10px; padding:14px; }
+  .stat-card .val { font-size:24px; font-weight:800; }
+  .stat-card .lbl { font-size:11px; color:#78909c; margin-top:2px; }
+
+  /* Kanban */
+  .kanban { display:flex; gap:12px; height:calc(100% - 40px); overflow-x:auto; }
+  .kanban-col { min-width:280px; flex:0 0 280px; background:#1a2940; border-radius:10px; border:1px solid #2a3a50; display:flex; flex-direction:column; }
+  .kanban-col-header { padding:12px 14px; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #2a3a50; }
+  .kanban-col-header .cnt { background:rgba(255,255,255,.1); padding:1px 8px; border-radius:10px; font-size:11px; }
+  .kanban-cards { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+  .lead-card { background:#0f1923; border:1px solid #2a3a50; border-radius:8px; padding:10px 12px; cursor:pointer; transition:all .15s; }
+  .lead-card:hover { border-color:#4fc3f7; }
+  .lead-card .lc-name { font-size:13px; font-weight:600; color:#fff; }
+  .lead-card .lc-phone { font-size:11px; color:#78909c; margin-top:2px; }
+  .lead-card .lc-meta { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .lc-tag { font-size:10px; padding:2px 6px; border-radius:4px; font-weight:600; }
+  .tag-service { background:rgba(79,195,247,.15); color:#4fc3f7; }
+  .tag-source { background:rgba(206,147,216,.15); color:#ce93d8; }
+  .tag-date { background:rgba(255,183,77,.15); color:#ffb74d; }
+  .tag-amount { background:rgba(165,214,167,.15); color:#a5d6a7; }
+  .kc-new .kanban-col-header { color:#4fc3f7; }
+  .kc-contacted .kanban-col-header { color:#81c784; }
+  .kc-interested .kanban-col-header { color:#ffb74d; }
+  .kc-booked .kanban-col-header { color:#a5d6a7; }
+  .kc-visited .kanban-col-header { color:#ce93d8; }
+  .kc-repeat .kanban-col-header { color:#ffd740; }
+  .kc-lost .kanban-col-header { color:#ef9a9a; }
+
+  /* Table */
+  .data-table { width:100%; border-collapse:collapse; }
+  .data-table th { text-align:left; font-size:11px; color:#78909c; padding:8px 12px; border-bottom:1px solid #2a3a50; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+  .data-table td { font-size:13px; padding:10px 12px; border-bottom:1px solid rgba(42,58,80,.5); }
+  .data-table tr:hover td { background:rgba(255,255,255,.02); }
+  .avatar-badge { display:inline-block; width:20px; height:20px; border-radius:50%; font-size:11px; line-height:20px; text-align:center; font-weight:700; color:#fff; }
+  .avatar-mama { background:#f48fb1; }
+  .avatar-teen { background:#4fc3f7; }
+  .avatar-couple { background:#ce93d8; }
+  .avatar-hr { background:#ffb74d; }
+  .avatar-entre { background:#81c784; }
+
+  /* Search & Filters */
+  .search-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .search-input { flex:1; min-width:200px; background:#1a2940; border:1px solid #2a3a50; border-radius:8px; padding:8px 12px; color:#e0e6ed; font-size:13px; }
+  .filter-select { background:#1a2940; border:1px solid #2a3a50; border-radius:8px; padding:8px 10px; color:#e0e6ed; font-size:12px; cursor:pointer; }
+
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:100; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#1a2940; border:1px solid #2a3a50; border-radius:12px; width:500px; max-height:85vh; overflow-y:auto; }
+  .modal-header { padding:16px 20px; border-bottom:1px solid #2a3a50; display:flex; justify-content:space-between; align-items:center; }
+  .modal-header h3 { font-size:15px; color:#fff; font-weight:700; }
+  .modal-close { background:none; border:none; color:#78909c; font-size:20px; cursor:pointer; transition:.15s; }
+  .modal-close:hover { color:#e0e6ed; }
+  .modal-body { padding:16px 20px; }
+  .form-group { margin-bottom:14px; }
+  .form-group label { display:block; font-size:12px; color:#78909c; margin-bottom:4px; font-weight:600; }
+  .form-group input, .form-group select, .form-group textarea { width:100%; background:#0f1923; color:#e0e6ed; border:1px solid #2a3a50; border-radius:6px; padding:8px 10px; font-size:13px; font-family:inherit; }
+  .form-group textarea { resize:vertical; min-height:60px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .modal-footer { padding:12px 20px; border-top:1px solid #2a3a50; display:flex; justify-content:flex-end; gap:8px; }
+
+  /* Stars */
+  .stars { display:inline-block; font-size:14px; color:#ffd740; }
+  .stars.empty { color:#455a64; }
+
+  /* Loading & Empty */
+  .loading { text-align:center; padding:40px; color:#78909c; }
+  .empty { text-align:center; padding:40px; color:#455a64; font-size:13px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:#0f1923; }
+  ::-webkit-scrollbar-thumb { background:#2a3a50; border-radius:3px; }
+
+  /* Reviews */
+  .review-card { background:#1a2940; border:1px solid #2a3a50; border-radius:10px; padding:12px; margin-bottom:10px; }
+  .review-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+  .review-name { color:#fff; font-weight:600; font-size:13px; }
+  .review-platform { font-size:10px; padding:2px 8px; border-radius:4px; background:rgba(79,195,247,.15); color:#4fc3f7; }
+  .review-text { font-size:12px; color:#b0bec5; line-height:1.4; margin:8px 0; }
+  .review-status { display:flex; align-items:center; gap:6px; font-size:11px; color:#78909c; margin-top:8px; }
+  .status-dot { width:6px; height:6px; border-radius:50%; }
+  .status-ok { background:#81c784; }
+  .status-pending { background:#ef9a9a; }
+  .status-responded { background:#4fc3f7; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <h1>VIRTU <span>VR</span></h1>
+    <div class="sub">CRM</div>
+  </div>
+  <div class="nav">
+    <div class="nav-item active" data-page="dashboard"><div class="icon">📊</div> Дашборд</div>
+    <div class="nav-item" data-page="leads"><div class="icon">📋</div> Лиды <div class="badge" id="leads-count">0</div></div>
+    <div class="nav-item" data-page="clients"><div class="icon">👥</div> Клиенты</div>
+    <div class="nav-item" data-page="deals"><div class="icon">💰</div> Сделки</div>
+    <div class="nav-item" data-page="reviews"><div class="icon">⭐</div> Отзывы</div>
+  </div>
+  <div class="sidebar-footer">
+    <select class="loc-select" id="location-filter">
+      <option value="all">Все локации</option>
+    </select>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <h2 id="page-title">Дашборд</h2>
+    <div class="topbar-actions" id="topbar-actions"></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Modal: New Lead -->
+<div class="modal-overlay" id="modal-lead">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-lead-title">Новый лид</h3>
+      <button class="modal-close" onclick="closeModal('modal-lead')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Имя</label><input id="lead-name" placeholder="Имя клиента"></div>
+        <div class="form-group"><label>Телефон</label><input id="lead-phone" placeholder="+7..."></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Email</label><input id="lead-email" type="email"></div>
+        <div class="form-group"><label>Источник</label>
+          <select id="lead-source"><option value="">—</option><option value="2gis">2ГИС</option><option value="avito">Авито</option><option value="instagram">Инстаграм</option><option value="telegram">Телеграм</option><option value="walk_in">Walk-in</option><option value="referral">Рекомендация</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Интерес к продукту</label>
+          <select id="lead-interest"><option value="">—</option><option value="session">Сеанс</option><option value="birthday">День рождения</option><option value="quest">Квест</option><option value="arena">Арена</option><option value="corporate">Корпоратив</option><option value="event">Событие</option></select>
+        </div>
+        <div class="form-group"><label>Сумма (руб)</label><input id="lead-amount" type="number" placeholder="5000"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Локация</label><select id="lead-location"></select></div>
+        <div class="form-group"><label>Статус</label>
+          <select id="lead-status"><option value="new">Новый</option><option value="contacted">Контакт</option><option value="interested">Интерес</option><option value="booked">Бронь</option><option value="visited">Визит</option><option value="repeat">Повторный</option><option value="lost">Потерян</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Заметки</label><textarea id="lead-notes"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-lead')">Отмена</button>
+      <button class="btn btn-primary" id="btn-save-lead">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: New Client -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Новый клиент</h3>
+      <button class="modal-close" onclick="closeModal('modal-client')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Имя</label><input id="client-name" placeholder="ФИО"></div>
+        <div class="form-group"><label>Телефон</label><input id="client-phone" placeholder="+7..."></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Email</label><input id="client-email" type="email"></div>
+        <div class="form-group"><label>Сегмент (аватар)</label>
+          <select id="client-avatar"><option value="mama_marina">Мама Марина</option><option value="teen_danya">Подросток Даня</option><option value="couple">Пара</option><option value="hr_manager">HR менеджер</option><option value="entrepreneur">Предприниматель</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Источник</label>
+          <select id="client-source"><option value="">—</option><option value="2gis">2ГИС</option><option value="avito">Авито</option><option value="instagram">Инстаграм</option><option value="telegram">Телеграм</option><option value="walk_in">Walk-in</option><option value="referral">Рекомендация</option></select>
+        </div>
+        <div class="form-group"><label>Локация</label><select id="client-location"></select></div>
+      </div>
+      <div class="form-group"><label>Теги (через запятую)</label><input id="client-tags" placeholder="VIP, постоянный, друг..."></div>
+      <div class="form-group"><label>Заметки</label><textarea id="client-notes"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-client')">Отмена</button>
+      <button class="btn btn-primary" id="btn-save-client">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: New Deal -->
+<div class="modal-overlay" id="modal-deal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Новая сделка</h3>
+      <button class="modal-close" onclick="closeModal('modal-deal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Клиент</label><select id="deal-client"></select></div>
+        <div class="form-group"><label>Лид</label><select id="deal-lead"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Продукт</label>
+          <select id="deal-product"><option value="session_30">Сеанс 30 мин</option><option value="session_60">Сеанс 60 мин</option><option value="birthday_base">ДР базовый</option><option value="birthday_vip">ДР VIP</option><option value="quest">Квест</option><option value="arena">Арена</option><option value="corporate">Корпоратив</option></select>
+        </div>
+        <div class="form-group"><label>Сумма (руб)</label><input id="deal-amount" type="number" placeholder="5000"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Локация</label><select id="deal-location"></select></div>
+        <div class="form-group"><label>Статус</label>
+          <select id="deal-status"><option value="pending">Ожидание</option><option value="confirmed">Подтверждено</option><option value="completed">Завершено</option><option value="cancelled">Отменено</option><option value="refunded">Возврат</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Дата проведения</label><input id="deal-scheduled" type="datetime-local"></div>
+        <div class="form-group"><label>Участников</label><input id="deal-participants" type="number" placeholder="4" value="4"></div>
+      </div>
+      <div class="form-group"><label>Заметки</label><textarea id="deal-notes"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-deal')">Отмена</button>
+      <button class="btn btn-primary" id="btn-save-deal">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Review Response -->
+<div class="modal-overlay" id="modal-review">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-review-title">Ответить на отзыв</h3>
+      <button class="modal-close" onclick="closeModal('modal-review')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Статус ответа</label>
+        <select id="review-response-status"><option value="pending">Не ответили</option><option value="responded">Ответили</option><option value="skipped">Пропущено</option></select>
+      </div>
+      <div class="form-group"><label>Наш ответ</label><textarea id="review-response-text" placeholder="Спасибо за отзыв..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-review')">Отмена</button>
+      <button class="btn btn-primary" id="btn-save-review">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// SUPABASE CLIENT
+// ============================================
+const SUPABASE_URL = 'https://hnwujhsllkjqjuulyogb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhud3VqaHNsbGtqcWp1dWx5b2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0Mjc0MDYsImV4cCI6MjA5MTAwMzQwNn0.lVl1UhfPQB9k7sJBjAP5oEvCTWZjIsn4NMiFUzHC1Vc';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'virtu' } });
+
+// ============================================
+// STATE
+// ============================================
+let state = {
+  page: 'dashboard',
+  locations: [],
+  clients: [],
+  leads: [],
+  deals: [],
+  reviews: [],
+  interactions: [],
+  selectedLocation: 'all',
+  editingLeadId: null,
+  editingReviewId: null
+};
+
+// ============================================
+// INIT
+// ============================================
+async function init() {
+  try {
+    await loadLocations();
+    await loadAll();
+    setupNav();
+    setupModals();
+    render();
+  } catch (err) {
+    console.error('Init error:', err);
+    alert('Ошибка загрузки. Проверьте интернет.');
+  }
+}
+
+async function loadLocations() {
+  const {data} = await sb.from('locations').select('*').order('name');
+  state.locations = data || [];
+  const sel = document.getElementById('location-filter');
+  const leadLoc = document.getElementById('lead-location');
+  const clientLoc = document.getElementById('client-location');
+  const dealLoc = document.getElementById('deal-location');
+
+  [leadLoc, clientLoc, dealLoc].forEach(s => { s.innerHTML = '<option value="">—</option>'; });
+  state.locations.forEach(l => {
+    [leadLoc, clientLoc, dealLoc].forEach(s => {
+      s.innerHTML += `<option value="${l.id}">${l.name}</option>`;
+    });
+  });
+}
+
+async function loadAll() {
+  await Promise.all([loadClients(), loadLeads(), loadDeals(), loadReviews()]);
+}
+
+async function loadClients() {
+  let q = sb.from('clients').select('*').order('created_at', {ascending:false});
+  if (state.selectedLocation !== 'all') q = q.eq('location_id', state.selectedLocation);
+  const {data} = await q;
+  state.clients = data || [];
+}
+
+async function loadLeads() {
+  let q = sb.from('leads').select('*').order('created_at', {ascending:false});
+  if (state.selectedLocation !== 'all') q = q.eq('location_id', state.selectedLocation);
+  const {data} = await q;
+  state.leads = data || [];
+  document.getElementById('leads-count').textContent = state.leads.filter(l => l.status !== 'lost').length;
+}
+
+async function loadDeals() {
+  let q = sb.from('deals').select('*').order('created_at', {ascending:false});
+  if (state.selectedLocation !== 'all') q = q.eq('location_id', state.selectedLocation);
+  const {data} = await q;
+  state.deals = data || [];
+}
+
+async function loadReviews() {
+  let q = sb.from('reviews').select('*').order('review_date', {ascending:false});
+  if (state.selectedLocation !== 'all') q = q.eq('location_id', state.selectedLocation);
+  const {data} = await q;
+  state.reviews = data || [];
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+function setupNav() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.onclick = () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      state.page = item.dataset.page;
+      render();
+    };
+  });
+  document.getElementById('location-filter').onchange = async (e) => {
+    state.selectedLocation = e.target.value;
+    await loadAll();
+    render();
+  };
+}
+
+// ============================================
+// RENDER
+// ============================================
+function render() {
+  const titles = { dashboard:'Дашборд', leads:'Лиды — Канбан', clients:'Клиенты', deals:'Сделки', reviews:'Отзывы' };
+  document.getElementById('page-title').textContent = titles[state.page];
+  const actions = document.getElementById('topbar-actions');
+  const content = document.getElementById('content');
+
+  if (state.page === 'dashboard') { actions.innerHTML = ''; renderDashboard(content); }
+  else if (state.page === 'leads') { actions.innerHTML = '<button class="btn btn-primary" onclick="openLeadModal()">+ Новый лид</button>'; renderLeads(content); }
+  else if (state.page === 'clients') { actions.innerHTML = '<button class="btn btn-primary" onclick="openClientModal()">+ Новый клиент</button>'; renderClients(content); }
+  else if (state.page === 'deals') { actions.innerHTML = '<button class="btn btn-primary" onclick="openDealModal()">+ Новая сделка</button>'; renderDeals(content); }
+  else if (state.page === 'reviews') { actions.innerHTML = ''; renderReviews(content); }
+}
+
+// ============================================
+// DASHBOARD
+// ============================================
+function renderDashboard(el) {
+  const activeLeads = state.leads.filter(l => !['visited','lost'].includes(l.status)).length;
+  const totalClients = state.clients.length;
+  const pendingDeals = state.deals.filter(d => d.status === 'pending').reduce((s,d) => s + (parseFloat(d.amount)||0), 0);
+  const avgRating = state.reviews.filter(r => r.rating).length ?
+    state.reviews.filter(r => r.rating).reduce((s,r) => s + r.rating, 0) / state.reviews.filter(r=>r.rating).length : 0;
+  const reviewsPending = state.reviews.filter(r => r.response_status === 'pending').length;
+
+  el.innerHTML = `
+    <div class="stats">
+      <div class="stat-card"><div class="val" style="color:#4fc3f7">${activeLeads}</div><div class="lbl">Активных лидов</div></div>
+      <div class="stat-card"><div class="val" style="color:#81c784">${totalClients}</div><div class="lbl">Клиентов</div></div>
+      <div class="stat-card"><div class="val" style="color:#ffb74d">${pendingDeals.toLocaleString('ru')} ₽</div><div class="lbl">Сумма в ожидании</div></div>
+      <div class="stat-card"><div class="val" style="color:#ffd740">${avgRating.toFixed(1)} ⭐</div><div class="lbl">Средний рейтинг</div></div>
+      <div class="stat-card"><div class="val" style="color:#f48fb1">${reviewsPending}</div><div class="lbl">Ожидают ответа</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="background:#1a2940;border:1px solid #2a3a50;border-radius:10px;padding:16px">
+        <h3 style="font-size:14px;color:#fff;margin-bottom:12px">Воронка лидов</h3>
+        ${renderFunnelBars()}
+      </div>
+      <div style="background:#1a2940;border:1px solid #2a3a50;border-radius:10px;padding:16px">
+        <h3 style="font-size:14px;color:#fff;margin-bottom:12px">Сделки по статусам</h3>
+        ${renderDealStats()}
+      </div>
+    </div>
+    <div style="background:#1a2940;border:1px solid #2a3a50;border-radius:10px;padding:16px">
+      <h3 style="font-size:14px;color:#fff;margin-bottom:12px">Последние отзывы (ожидают ответа)</h3>
+      ${renderPendingReviewsList()}
+    </div>
+  `;
+}
+
+function renderFunnelBars() {
+  const statuses = ['new','contacted','interested','booked','visited','repeat','lost'];
+  const labels = { new:'Новый', contacted:'Контакт', interested:'Интерес', booked:'Бронь', visited:'Визит', repeat:'Повторный', lost:'Потерян' };
+  const colors = ['#4fc3f7','#81c784','#ffb74d','#a5d6a7','#ce93d8','#ffd740','#ef9a9a'];
+  const counts = statuses.map(s => state.leads.filter(l => l.status === s).length);
+  const max = Math.max(...counts, 1);
+
+  return statuses.map((s,i) => {
+    const cnt = counts[i];
+    const pct = (cnt / max * 100).toFixed(0);
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="width:80px;font-size:12px;color:#78909c">${labels[s]}</div>
+      <div style="flex:1;height:22px;background:#0f1923;border-radius:4px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${colors[i]};border-radius:4px;display:flex;align-items:center;padding-left:6px;font-size:11px;font-weight:700;color:#0f1923">${cnt}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDealStats() {
+  const statuses = ['pending','confirmed','completed','cancelled'];
+  const labels = { pending:'Ожидание', confirmed:'Подтверждено', completed:'Завершено', cancelled:'Отменено' };
+  const colors = ['#ffb74d','#81c784','#4fc3f7','#ef9a9a'];
+
+  return statuses.map((s,i) => {
+    const deals = state.deals.filter(d => d.status === s);
+    const amount = deals.reduce((sum,d) => sum + (parseFloat(d.amount)||0), 0);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(42,58,80,.5)">
+      <div style="font-size:12px;color:#78909c">${labels[s]}</div>
+      <div style="font-weight:600;color:${colors[i]}">${deals.length} · ${amount.toLocaleString('ru')} ₽</div>
+    </div>`;
+  }).join('');
+}
+
+function renderPendingReviewsList() {
+  const pending = state.reviews.filter(r => r.response_status === 'pending').slice(0,5);
+  if (!pending.length) return '<div class="empty">Все ответы даны!</div>';
+  return pending.map(r => {
+    const client = state.clients.find(c => c.id === r.client_id);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(42,58,80,.5);font-size:12px">
+      <div>
+        <div style="color:#fff;font-weight:600">${client?.name || '—'}</div>
+        <div style="color:#78909c;font-size:11px">${r.platform || ''} · ${formatDate(r.review_date)}</div>
+      </div>
+      <div style="color:#ffb74d;font-weight:600">${'★'.repeat(r.rating || 0)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================
+// LEADS KANBAN
+// ============================================
+function renderLeads(el) {
+  const statuses = [
+    {key:'new', label:'Новый'},
+    {key:'contacted', label:'Контакт'},
+    {key:'interested', label:'Интерес'},
+    {key:'booked', label:'Бронь'},
+    {key:'visited', label:'Визит'},
+    {key:'repeat', label:'Повторный'},
+    {key:'lost', label:'Потерян'}
+  ];
+  const classNames = ['kc-new','kc-contacted','kc-interested','kc-booked','kc-visited','kc-repeat','kc-lost'];
+
+  el.innerHTML = '<div class="kanban">' + statuses.map((s,i) => {
+    const leads = state.leads.filter(l => l.status === s.key);
+    return `<div class="kanban-col ${classNames[i]}" ondragover="event.preventDefault()" ondrop="dropLead(event,'${s.key}')">
+      <div class="kanban-col-header">${s.label} <span class="cnt">${leads.length}</span></div>
+      <div class="kanban-cards">
+        ${leads.map(l => renderLeadCard(l)).join('')}
+        ${!leads.length ? '<div class="empty">Пусто</div>' : ''}
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function renderLeadCard(l) {
+  const client = state.clients.find(c => c.id === l.client_id);
+  return `<div class="lead-card" draggable="true" ondragstart="dragLead(event,'${l.id}')" onclick="editLead('${l.id}')">
+    <div class="lc-name">${l.name}</div>
+    <div class="lc-phone">${l.phone || '—'}</div>
+    <div class="lc-meta">
+      ${l.product_interest ? `<span class="lc-tag tag-service">${l.product_interest}</span>` : ''}
+      ${l.source ? `<span class="lc-tag tag-source">${l.source}</span>` : ''}
+      ${l.amount ? `<span class="lc-tag tag-amount">${l.amount} ₽</span>` : ''}
+    </div>
+  </div>`;
+}
+
+let draggedLeadId = null;
+function dragLead(e, id) { draggedLeadId = id; e.dataTransfer.effectAllowed = 'move'; }
+async function dropLead(e, status) {
+  e.preventDefault();
+  if (!draggedLeadId) return;
+  await sb.from('leads').update({status}).eq('id', draggedLeadId);
+  draggedLeadId = null;
+  await loadLeads();
+  render();
+}
+
+window.editLead = (id) => {
+  const lead = state.leads.find(l => l.id === id);
+  if (lead) openLeadModal(lead);
+};
+
+// ============================================
+// CLIENTS
+// ============================================
+function renderClients(el) {
+  el.innerHTML = `
+    <div class="search-bar">
+      <input class="search-input" placeholder="Поиск..." oninput="filterClients(this.value)">
+      <select class="filter-select" onchange="filterClientAvatar(this.value)">
+        <option value="">Все сегменты</option>
+        <option value="mama_marina">Мама Марина</option>
+        <option value="teen_danya">Подросток Даня</option>
+        <option value="couple">Пара</option>
+        <option value="hr_manager">HR менеджер</option>
+        <option value="entrepreneur">Предприниматель</option>
+      </select>
+    </div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Имя</th><th>Телефон</th><th>Сегмент</th><th>Источник</th><th>Визитов</th><th>Потрачено</th><th>Локация</th>
+      </tr></thead>
+      <tbody id="clients-tbody"></tbody>
+    </table>
+  `;
+  renderClientRows(state.clients);
+}
+
+function renderClientRows(clients) {
+  const tbody = document.getElementById('clients-tbody');
+  if (!tbody) return;
+  if (!clients.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет клиентов</td></tr>'; return; }
+  tbody.innerHTML = clients.map(c => {
+    const loc = state.locations.find(l => l.id === c.location_id);
+    const avatarClasses = { mama_marina:'avatar-mama', teen_danya:'avatar-teen', couple:'avatar-couple', hr_manager:'avatar-hr', entrepreneur:'avatar-entre' };
+    const avatarShort = { mama_marina:'М', teen_danya:'Д', couple:'П', hr_manager:'HR', entrepreneur:'E' };
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="avatar-badge ${avatarClasses[c.avatar_type] || ''}">${avatarShort[c.avatar_type] || '?'}</div>
+        <span style="color:#fff;font-weight:500">${c.name}</span>
+      </div></td>
+      <td>${c.phone || '—'}</td>
+      <td style="font-size:11px;color:#78909c">${c.avatar_type || '—'}</td>
+      <td>${c.source || '—'}</td>
+      <td>${c.visits_count || 0}</td>
+      <td>${c.total_spent ? Number(c.total_spent).toLocaleString('ru') + ' ₽' : '—'}</td>
+      <td style="color:#78909c;font-size:12px">${loc?.name || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.filterClients = (q) => {
+  q = q.toLowerCase();
+  renderClientRows(state.clients.filter(c => c.name.toLowerCase().includes(q) || (c.phone||'').includes(q)));
+};
+
+window.filterClientAvatar = (av) => {
+  renderClientRows(av ? state.clients.filter(c => c.avatar_type === av) : state.clients);
+};
+
+// ============================================
+// DEALS
+// ============================================
+function renderDeals(el) {
+  el.innerHTML = `
+    <div class="search-bar">
+      <select class="filter-select" onchange="filterDealStatus(this.value)">
+        <option value="">Все статусы</option>
+        <option value="pending">Ожидание</option>
+        <option value="confirmed">Подтверждено</option>
+        <option value="completed">Завершено</option>
+        <option value="cancelled">Отменено</option>
+        <option value="refunded">Возврат</option>
+      </select>
+      <select class="filter-select" onchange="filterDealProduct(this.value)">
+        <option value="">Все продукты</option>
+        <option value="session_30">Сеанс 30 мин</option>
+        <option value="session_60">Сеанс 60 мин</option>
+        <option value="birthday_base">ДР базовый</option>
+        <option value="birthday_vip">ДР VIP</option>
+        <option value="quest">Квест</option>
+        <option value="arena">Арена</option>
+        <option value="corporate">Корпоратив</option>
+      </select>
+    </div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Клиент</th><th>Продукт</th><th>Сумма</th><th>Статус</th><th>Дата проведения</th><th>Участников</th><th>Локация</th>
+      </tr></thead>
+      <tbody id="deals-tbody"></tbody>
+    </table>
+  `;
+  renderDealRows(state.deals);
+}
+
+function renderDealRows(deals) {
+  const tbody = document.getElementById('deals-tbody');
+  if (!tbody) return;
+  if (!deals.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет сделок</td></tr>'; return; }
+  tbody.innerHTML = deals.map(d => {
+    const client = state.clients.find(c => c.id === d.client_id);
+    const loc = state.locations.find(l => l.id === d.location_id);
+    const statusColors = { pending:'#ffb74d', confirmed:'#81c784', completed:'#4fc3f7', cancelled:'#ef9a9a', refunded:'#ce93d8' };
+    const statusLabels = { pending:'Ожидание', confirmed:'Подтверждено', completed:'Завершено', cancelled:'Отменено', refunded:'Возврат' };
+    return `<tr>
+      <td style="color:#fff;font-weight:500">${client?.name || '—'}</td>
+      <td>${d.product || '—'}</td>
+      <td style="font-weight:600">${Number(d.amount || 0).toLocaleString('ru')} ₽</td>
+      <td><span style="color:${statusColors[d.status] || '#78909c'};font-weight:600">${statusLabels[d.status] || '—'}</span></td>
+      <td style="color:#78909c;font-size:12px">${formatDate(d.scheduled_at)}</td>
+      <td>${d.participants_count || 0}</td>
+      <td style="color:#78909c;font-size:12px">${loc?.name || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.filterDealStatus = (status) => {
+  renderDealRows(status ? state.deals.filter(d => d.status === status) : state.deals);
+};
+
+window.filterDealProduct = (product) => {
+  renderDealRows(product ? state.deals.filter(d => d.product === product) : state.deals);
+};
+
+// ============================================
+// REVIEWS
+// ============================================
+function renderReviews(el) {
+  const left = state.reviews.filter(r => r.rating).length;
+  const pending = state.reviews.filter(r => !r.rating).length;
+  const responded = state.reviews.filter(r => r.response_status === 'responded').length;
+  const avg = state.reviews.filter(r=>r.rating).length ?
+    state.reviews.filter(r=>r.rating).reduce((s,r)=>s+r.rating,0) / state.reviews.filter(r=>r.rating).length : 0;
+
+  el.innerHTML = `
+    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+      <div class="stat-card"><div class="val" style="color:#81c784">${left}</div><div class="lbl">Получено отзывов</div></div>
+      <div class="stat-card"><div class="val" style="color:#ef9a9a">${pending}</div><div class="lbl">Ожидают отзыв</div></div>
+      <div class="stat-card"><div class="val" style="color:#4fc3f7">${responded}</div><div class="lbl">На них ответили</div></div>
+      <div class="stat-card"><div class="val" style="color:#ffd740">${avg.toFixed(1)} ⭐</div><div class="lbl">Средний рейтинг</div></div>
+    </div>
+    <div class="search-bar">
+      <select class="filter-select" onchange="filterReviewStatus(this.value)">
+        <option value="">Все</option><option value="received">Получены</option><option value="pending">Ожидают</option><option value="responded">Ответили</option>
+      </select>
+    </div>
+    <div id="reviews-list"></div>
+  `;
+  renderReviewCards(state.reviews);
+}
+
+function renderReviewCards(reviews) {
+  const container = document.getElementById('reviews-list');
+  if (!container) return;
+  if (!reviews.length) { container.innerHTML = '<div class="empty">Нет отзывов</div>'; return; }
+
+  container.innerHTML = reviews.map(r => {
+    const client = state.clients.find(c => c.id === r.client_id);
+    const statusLabel = { pending:'Ожидает', responded:'Ответили', skipped:'Пропущено' }[r.response_status] || 'Ожидает';
+    const statusColor = { pending:'#ef9a9a', responded:'#81c784', skipped:'#78909c' }[r.response_status] || '#78909c';
+    return `<div class="review-card">
+      <div class="review-top">
+        <div>
+          <div class="review-name">${client?.name || '—'}</div>
+          <div style="color:#78909c;font-size:11px">${r.platform || ''} · ${formatDate(r.review_date)}</div>
+        </div>
+        <div class="review-platform">${r.platform || ''}</div>
+      </div>
+      ${r.rating ? `<div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>` : ''}
+      ${r.text_content ? `<div class="review-text">"${r.text_content}"</div>` : ''}
+      <div class="review-status">
+        <span class="status-dot" style="background:${statusColor}"></span>
+        <span style="color:${statusColor};font-weight:600">${statusLabel}</span>
+        ${r.response_status === 'responded' && r.response_text ? `<span style="margin-left:auto;color:#4fc3f7;font-size:11px">✓ Ответ дан</span>` : ''}
+        <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="editReview('${r.id}')">Ответить</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.filterReviewStatus = (v) => {
+  let filtered = state.reviews;
+  if (v === 'received') filtered = state.reviews.filter(r => r.rating);
+  else if (v === 'pending') filtered = state.reviews.filter(r => !r.rating || r.response_status === 'pending');
+  else if (v === 'responded') filtered = state.reviews.filter(r => r.response_status === 'responded');
+  renderReviewCards(filtered);
+};
+
+window.editReview = (id) => {
+  state.editingReviewId = id;
+  const review = state.reviews.find(r => r.id === id);
+  if (!review) return;
+  document.getElementById('review-response-status').value = review.response_status || 'pending';
+  document.getElementById('review-response-text').value = review.response_text || '';
+  openModal('modal-review');
+};
+
+// ============================================
+// MODALS
+// ============================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openLeadModal(lead) {
+  state.editingLeadId = lead ? lead.id : null;
+  document.getElementById('modal-lead-title').textContent = lead ? 'Редактировать лид' : 'Новый лид';
+  document.getElementById('lead-name').value = lead?.name || '';
+  document.getElementById('lead-phone').value = lead?.phone || '';
+  document.getElementById('lead-email').value = lead?.email || '';
+  document.getElementById('lead-source').value = lead?.source || '';
+  document.getElementById('lead-interest').value = lead?.product_interest || '';
+  document.getElementById('lead-amount').value = lead?.amount || '';
+  document.getElementById('lead-location').value = lead?.location_id || state.locations[0]?.id || '';
+  document.getElementById('lead-status').value = lead?.status || 'new';
+  document.getElementById('lead-notes').value = lead?.notes || '';
+  openModal('modal-lead');
+}
+
+window.openLeadModal = (lead) => openLeadModal(lead);
+
+function openClientModal() {
+  document.getElementById('client-name').value = '';
+  document.getElementById('client-phone').value = '';
+  document.getElementById('client-email').value = '';
+  document.getElementById('client-avatar').value = 'mama_marina';
+  document.getElementById('client-source').value = '';
+  document.getElementById('client-location').value = state.locations[0]?.id || '';
+  document.getElementById('client-tags').value = '';
+  document.getElementById('client-notes').value = '';
+  openModal('modal-client');
+}
+
+window.openClientModal = openClientModal;
+
+function openDealModal() {
+  const clientSel = document.getElementById('deal-client');
+  const leadSel = document.getElementById('deal-lead');
+  clientSel.innerHTML = '<option value="">— выберите клиента —</option>';
+  leadSel.innerHTML = '<option value="">— выберите лид —</option>';
+  state.clients.forEach(c => clientSel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
+  state.leads.forEach(l => leadSel.innerHTML += `<option value="${l.id}">${l.name}</option>`);
+
+  document.getElementById('deal-product').value = 'session_60';
+  document.getElementById('deal-amount').value = '';
+  document.getElementById('deal-location').value = state.locations[0]?.id || '';
+  document.getElementById('deal-status').value = 'pending';
+  document.getElementById('deal-scheduled').value = '';
+  document.getElementById('deal-participants').value = '4';
+  document.getElementById('deal-notes').value = '';
+  openModal('modal-deal');
+}
+
+window.openDealModal = openDealModal;
+
+function setupModals() {
+  // Lead save
+  document.getElementById('btn-save-lead').onclick = async () => {
+    const data = {
+      name: document.getElementById('lead-name').value,
+      phone: document.getElementById('lead-phone').value || null,
+      email: document.getElementById('lead-email').value || null,
+      source: document.getElementById('lead-source').value || null,
+      product_interest: document.getElementById('lead-interest').value || null,
+      amount: parseFloat(document.getElementById('lead-amount').value) || null,
+      location_id: document.getElementById('lead-location').value || null,
+      status: document.getElementById('lead-status').value,
+      notes: document.getElementById('lead-notes').value || null
+    };
+    if (!data.name) return alert('Введите имя');
+    if (state.editingLeadId) {
+      await sb.from('leads').update(data).eq('id', state.editingLeadId);
+    } else {
+      await sb.from('leads').insert(data);
+    }
+    closeModal('modal-lead');
+    await loadLeads();
+    render();
+  };
+
+  // Client save
+  document.getElementById('btn-save-client').onclick = async () => {
+    const data = {
+      name: document.getElementById('client-name').value,
+      phone: document.getElementById('client-phone').value || null,
+      email: document.getElementById('client-email').value || null,
+      avatar_type: document.getElementById('client-avatar').value,
+      source: document.getElementById('client-source').value || null,
+      location_id: document.getElementById('client-location').value || null,
+      tags: document.getElementById('client-tags').value ? document.getElementById('client-tags').value.split(',').map(t=>t.trim()) : [],
+      notes: document.getElementById('client-notes').value || null
+    };
+    if (!data.name) return alert('Введите имя');
+    await sb.from('clients').insert(data);
+    closeModal('modal-client');
+    await loadClients();
+    render();
+  };
+
+  // Deal save
+  document.getElementById('btn-save-deal').onclick = async () => {
+    const data = {
+      lead_id: document.getElementById('deal-lead').value || null,
+      client_id: document.getElementById('deal-client').value || null,
+      product: document.getElementById('deal-product').value,
+      amount: parseFloat(document.getElementById('deal-amount').value) || null,
+      location_id: document.getElementById('deal-location').value,
+      status: document.getElementById('deal-status').value,
+      scheduled_at: document.getElementById('deal-scheduled').value || null,
+      participants_count: parseInt(document.getElementById('deal-participants').value) || null,
+      notes: document.getElementById('deal-notes').value || null
+    };
+    if (!data.client_id) return alert('Выберите клиента');
+    await sb.from('deals').insert(data);
+    closeModal('modal-deal');
+    await loadDeals();
+    render();
+  };
+
+  // Review save
+  document.getElementById('btn-save-review').onclick = async () => {
+    const data = {
+      response_status: document.getElementById('review-response-status').value,
+      response_text: document.getElementById('review-response-text').value || null
+    };
+    await sb.from('reviews').update(data).eq('id', state.editingReviewId);
+    closeModal('modal-review');
+    await loadReviews();
+    render();
+  };
+}
+
+// ============================================
+// HELPERS
+// ============================================
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('ru-RU', {day:'numeric', month:'short'});
+}
+
+// ============================================
+// START
+// ============================================
+init();
+</script>
+</body>
+</html>
