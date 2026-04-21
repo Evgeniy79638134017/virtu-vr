@@ -5,59 +5,135 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VIRTU VR — Система управления</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:#f5f7fa;color:#1a1a2e;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.bg-blur{position:fixed;top:-120px;right:-120px;width:400px;height:400px;background:radial-gradient(circle,rgba(99,102,241,.15),transparent 70%);border-radius:50%;pointer-events:none;z-index:0}
-.bg-blur2{position:fixed;bottom:-100px;left:-100px;width:350px;height:350px;background:radial-gradient(circle,rgba(236,72,153,.12),transparent 70%);border-radius:50%;pointer-events:none;z-index:0}
-.container{position:relative;z-index:1;text-align:center;max-width:800px;padding:40px 20px}
-.logo{font-size:52px;font-weight:800;letter-spacing:-2px;margin-bottom:6px;color:#1a1a2e}
-.logo span{background:linear-gradient(135deg,#6366f1,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.sub{color:#94a3b8;font-size:15px;font-weight:400;margin-bottom:56px;letter-spacing:.3px}
-.cards{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
-.card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:40px 32px;width:300px;text-decoration:none;color:#1a1a2e;transition:all .35s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:20px 20px 0 0;opacity:0;transition:opacity .35s}
-.card-crm::before{background:linear-gradient(90deg,#6366f1,#818cf8)}
-.card-content::before{background:linear-gradient(90deg,#ec4899,#f472b6)}
-.card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.08);border-color:#c7d2fe}
-.card:hover::before{opacity:1}
-.card-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 20px}
-.card-crm .card-icon{background:linear-gradient(135deg,#eef2ff,#e0e7ff)}
-.card-content .card-icon{background:linear-gradient(135deg,#fdf2f8,#fce7f3)}
-.card-title{font-size:20px;font-weight:700;margin-bottom:10px}
-.card-crm .card-title{color:#4f46e5}
-.card-content .card-title{color:#db2777}
-.card-desc{color:#64748b;font-size:14px;line-height:1.65}
-.card-arrow{margin-top:20px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;opacity:0;transform:translateX(-8px);transition:all .35s}
-.card-crm .card-arrow{color:#6366f1}
-.card-content .card-arrow{color:#ec4899}
-.card:hover .card-arrow{opacity:1;transform:translateX(0)}
-.footer{margin-top:64px;color:#94a3b8;font-size:12px;font-weight:400;letter-spacing:.5px}
-@media(max-width:680px){.cards{flex-direction:column;align-items:center}.card{width:100%;max-width:340px}.logo{font-size:40px}}
+body{
+  font-family:"Inter",system-ui,sans-serif;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#f0f2f5;
+  background-image:
+    linear-gradient(rgba(0,0,0,.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,.02) 1px, transparent 1px);
+  background-size:40px 40px;
+  color:#1a1a2e;
+  padding:40px 20px;
+}
+.container{text-align:center;max-width:860px;width:100%}
+.logo{
+  font-size:48px;font-weight:800;letter-spacing:-1.5px;
+  color:#1a1a2e;margin-bottom:8px;
+}
+.logo span{color:#0d9488}
+.sub{
+  color:#64748b;font-size:15px;font-weight:500;
+  margin-bottom:56px;letter-spacing:.3px;
+}
+.cards{
+  display:flex;gap:32px;justify-content:center;flex-wrap:wrap;
+  position:relative;
+}
+/* connecting line between cards */
+.cards::before{
+  content:"";position:absolute;top:50%;left:calc(50% - 80px);
+  width:160px;height:2px;
+  background:linear-gradient(90deg,#0d9488,#5eead4);
+  z-index:0;
+}
+.card{
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:16px;
+  padding:36px 28px 32px;
+  width:320px;
+  text-decoration:none;color:#1a1a2e;
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+  cursor:pointer;position:relative;z-index:1;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 12px 40px rgba(13,148,136,.12);
+  border-color:#99f6e4;
+}
+.card-icon{
+  width:64px;height:64px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;
+  background:#f0fdfa;
+  border:1px solid #ccfbf1;
+}
+.card-icon svg{width:32px;height:32px;color:#0d9488}
+.card-title{
+  font-size:20px;font-weight:700;margin-bottom:10px;
+  color:#0f172a;
+}
+.card-desc{
+  color:#64748b;font-size:14px;line-height:1.7;
+  margin-bottom:20px;
+}
+.card-link{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;font-weight:600;color:#0d9488;
+  opacity:0;transform:translateY(4px);
+  transition:all .3s;
+}
+.card:hover .card-link{opacity:1;transform:translateY(0)}
+.dot{
+  position:absolute;z-index:2;
+  width:12px;height:12px;border-radius:50%;
+  background:#0d9488;border:2px solid #fff;
+  box-shadow:0 0 0 2px #0d9488;
+}
+.dot-left{top:50%;left:-6px;transform:translateY(-50%)}
+.dot-right{top:50%;right:-6px;transform:translateY(-50%)}
+.footer{
+  margin-top:56px;color:#94a3b8;font-size:12px;
+  font-weight:400;letter-spacing:.5px;
+}
+.footer span{color:#0d9488;font-weight:600}
+@media(max-width:720px){
+  .cards{flex-direction:column;align-items:center}
+  .cards::before{display:none}
+  .card{width:100%;max-width:360px}
+  .dot{display:none}
+  .logo{font-size:36px}
+}
 </style>
 </head>
 <body>
-<div class="bg-blur"></div>
-<div class="bg-blur2"></div>
 <div class="container">
   <div class="logo">VIRTU <span>VR</span></div>
   <div class="sub">Система управления бизнесом</div>
+
   <div class="cards">
-    <a href="crm.html" class="card card-crm">
-      <div class="card-icon">📊</div>
+    <a href="crm.html" class="card">
+      <div class="dot dot-right"></div>
+      <div class="card-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605"/>
+        </svg>
+      </div>
       <div class="card-title">CRM</div>
-      <div class="card-desc">Лиды, клиенты, сделки, отзывы. Канбан-доска и аналитика.</div>
-      <div class="card-arrow">Открыть →</div>
+      <div class="card-desc">Лиды, клиенты, сделки, отзывы. Канбан-доска и аналитика продаж.</div>
+      <div class="card-link">Открыть <span>&#8594;</span></div>
     </a>
-    <a href="content.html" class="card card-content">
-      <div class="card-icon">🎬</div>
+
+    <a href="content.html" class="card">
+      <div class="dot dot-left"></div>
+      <div class="card-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"/>
+        </svg>
+      </div>
       <div class="card-title">Фабрика контента</div>
-      <div class="card-desc">Контент-план, календарь, шаблоны, метрики по каналам.</div>
-      <div class="card-arrow">Открыть →</div>
+      <div class="card-desc">Контент-план, календарь публикаций, шаблоны и метрики по каналам.</div>
+      <div class="card-link">Открыть <span>&#8594;</span></div>
     </a>
   </div>
-  <div class="footer">VIRTU VR × ИИщенко LAB · 2026</div>
+
+  <div class="footer">VIRTU VR × <span>ИИщенко LAB</span> · 2026</div>
 </div>
 </body>
 </html>
