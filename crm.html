@@ -105,6 +105,51 @@
   .loading { text-align:center; padding:40px; color:#78909c; }
   .empty { text-align:center; padding:40px; color:#455a64; font-size:13px; }
 
+  /* Slide Panel (amoCRM-style) */
+  .slide-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; opacity:0; pointer-events:none; transition:opacity .3s; }
+  .slide-overlay.open { opacity:1; pointer-events:auto; }
+  .slide-panel { position:fixed; top:0; right:-720px; width:720px; max-width:100vw; height:100vh; background:#0f1923; z-index:201; transition:right .35s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; box-shadow:-4px 0 30px rgba(0,0,0,.4); }
+  .slide-panel.open { right:0; }
+  .slide-top { display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid #2a3a50; background:#1a2940; }
+  .slide-top h3 { flex:1; font-size:16px; color:#fff; font-weight:700; }
+  .slide-top .slide-close { background:none; border:none; color:#78909c; font-size:22px; cursor:pointer; transition:.15s; }
+  .slide-top .slide-close:hover { color:#e0e6ed; }
+  .slide-actions { display:flex; gap:8px; padding:12px 20px; border-bottom:1px solid #2a3a50; background:#1a2940; flex-wrap:wrap; }
+  .slide-actions .act-btn { padding:6px 14px; border-radius:6px; border:1px solid #2a3a50; background:#0f1923; color:#b0bec5; font-size:12px; font-weight:600; cursor:pointer; transition:.2s; display:flex; align-items:center; gap:5px; }
+  .slide-actions .act-btn:hover { border-color:#4fc3f7; color:#4fc3f7; }
+  .act-btn.act-convert { border-color:#81c784; color:#81c784; }
+  .act-btn.act-convert:hover { background:rgba(129,199,132,.12); }
+  .act-btn.act-delete { border-color:#ef5350; color:#ef5350; }
+  .act-btn.act-delete:hover { background:rgba(239,83,80,.12); }
+  .slide-body { flex:1; display:grid; grid-template-columns:1fr 1fr; overflow:hidden; }
+  .slide-left { padding:20px; overflow-y:auto; border-right:1px solid #2a3a50; }
+  .slide-right { padding:20px; overflow-y:auto; background:#111e2e; }
+  .slide-section { margin-bottom:20px; }
+  .slide-section-title { font-size:11px; font-weight:700; color:#4fc3f7; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .slide-field { margin-bottom:12px; }
+  .slide-field label { display:block; font-size:11px; color:#78909c; margin-bottom:3px; font-weight:600; }
+  .slide-field input, .slide-field select, .slide-field textarea { width:100%; background:#1a2940; color:#e0e6ed; border:1px solid #2a3a50; border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit; }
+  .slide-field textarea { resize:vertical; min-height:60px; }
+  .slide-field .field-value { font-size:13px; color:#e0e6ed; padding:4px 0; }
+  .slide-status-bar { display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+  .slide-status-bar .st-step { flex:1; min-width:60px; text-align:center; padding:6px 4px; font-size:10px; font-weight:600; border-radius:4px; background:#1a2940; color:#78909c; cursor:pointer; transition:.2s; border:1px solid transparent; }
+  .slide-status-bar .st-step.active { background:#4fc3f7; color:#0f1923; }
+  .slide-status-bar .st-step:hover { border-color:#4fc3f7; }
+  /* Feed */
+  .feed-item { padding:10px 0; border-bottom:1px solid #1a2940; }
+  .feed-item:last-child { border:none; }
+  .feed-time { font-size:10px; color:#546e7a; margin-bottom:4px; }
+  .feed-text { font-size:12px; color:#b0bec5; line-height:1.5; }
+  .feed-type { display:inline-block; font-size:10px; font-weight:600; padding:1px 6px; border-radius:3px; margin-right:6px; }
+  .feed-type.ft-msg { background:rgba(79,195,247,.15); color:#4fc3f7; }
+  .feed-type.ft-status { background:rgba(255,183,77,.15); color:#ffb74d; }
+  .feed-type.ft-note { background:rgba(206,147,216,.15); color:#ce93d8; }
+  .feed-empty { text-align:center; color:#455a64; font-size:12px; padding:30px 0; }
+  .feed-add { display:flex; gap:8px; margin-top:12px; }
+  .feed-add input { flex:1; background:#1a2940; border:1px solid #2a3a50; border-radius:6px; padding:7px 10px; color:#e0e6ed; font-size:12px; }
+  .feed-add button { background:#4fc3f7; color:#0f1923; border:none; border-radius:6px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; }
+  @media(max-width:700px) { .slide-body { grid-template-columns:1fr; } .slide-right { border-top:1px solid #2a3a50; } }
+
   /* Scrollbar */
   ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:#0f1923; }
   ::-webkit-scrollbar-thumb { background:#2a3a50; border-radius:3px; }
@@ -281,6 +326,58 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-review')">Отмена</button>
       <button class="btn btn-primary" id="btn-save-review">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Slide Panel: Lead Detail (amoCRM-style) -->
+<div class="slide-overlay" id="slide-overlay" onclick="closeSlidePanel()"></div>
+<div class="slide-panel" id="slide-panel">
+  <div class="slide-top">
+    <h3 id="slide-lead-name">Лид</h3>
+    <button class="slide-close" onclick="closeSlidePanel()">&times;</button>
+  </div>
+  <div class="slide-actions">
+    <button class="act-btn" onclick="callLead()">📞 Позвонить</button>
+    <button class="act-btn" onclick="msgLead()">💬 Написать</button>
+    <button class="act-btn act-convert" onclick="convertLeadToClient()">✅ В клиента</button>
+    <button class="act-btn act-delete" onclick="deleteLead()">🗑 Удалить</button>
+  </div>
+  <div class="slide-body">
+    <div class="slide-left">
+      <div class="slide-status-bar" id="slide-status-bar"></div>
+      <div class="slide-section">
+        <div class="slide-section-title">Контакт</div>
+        <div class="slide-field"><label>Имя</label><input id="sl-name"></div>
+        <div class="slide-field"><label>Телефон</label><input id="sl-phone"></div>
+        <div class="slide-field"><label>Email</label><input id="sl-email" type="email"></div>
+      </div>
+      <div class="slide-section">
+        <div class="slide-section-title">Сделка</div>
+        <div class="slide-field"><label>Источник</label>
+          <select id="sl-source"><option value="">—</option><option value="2gis">2ГИС</option><option value="avito">Авито</option><option value="instagram">Инстаграм</option><option value="telegram">Телеграм</option><option value="whatsapp">WhatsApp</option><option value="walk_in">Walk-in</option><option value="referral">Рекомендация</option><option value="website">Сайт</option></select>
+        </div>
+        <div class="slide-field"><label>Интерес</label>
+          <select id="sl-interest"><option value="">—</option><option value="session">Сеанс</option><option value="birthday">День рождения</option><option value="quest">Квест</option><option value="arena">Арена</option><option value="corporate">Корпоратив</option><option value="event">Событие</option></select>
+        </div>
+        <div class="slide-field"><label>Сумма (руб)</label><input id="sl-amount" type="number"></div>
+        <div class="slide-field"><label>Локация</label><select id="sl-location"></select></div>
+      </div>
+      <div class="slide-section">
+        <div class="slide-section-title">Заметки</div>
+        <div class="slide-field"><textarea id="sl-notes" rows="4"></textarea></div>
+      </div>
+      <div style="padding-top:8px">
+        <button class="btn btn-primary" onclick="saveSlidePanel()" style="width:100%">💾 Сохранить</button>
+      </div>
+    </div>
+    <div class="slide-right">
+      <div class="slide-section-title">Лента событий</div>
+      <div id="slide-feed"></div>
+      <div class="feed-add">
+        <input id="feed-note-input" placeholder="Добавить заметку...">
+        <button onclick="addFeedNote()">Добавить</button>
+      </div>
     </div>
   </div>
 </div>
@@ -547,7 +644,7 @@ async function dropLead(e, status) {
 
 window.editLead = (id) => {
   const lead = state.leads.find(l => l.id === id);
-  if (lead) openLeadModal(lead);
+  if (lead) openSlidePanel(lead);
 };
 
 // ============================================
@@ -722,176 +819,4 @@ function renderReviewCards(reviews) {
         <span class="status-dot" style="background:${statusColor}"></span>
         <span style="color:${statusColor};font-weight:600">${statusLabel}</span>
         ${r.response_status === 'responded' && r.response_text ? `<span style="margin-left:auto;color:#4fc3f7;font-size:11px">✓ Ответ дан</span>` : ''}
-        <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="editReview('${r.id}')">Ответить</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-window.filterReviewStatus = (v) => {
-  let filtered = state.reviews;
-  if (v === 'received') filtered = state.reviews.filter(r => r.rating);
-  else if (v === 'pending') filtered = state.reviews.filter(r => !r.rating || r.response_status === 'pending');
-  else if (v === 'responded') filtered = state.reviews.filter(r => r.response_status === 'responded');
-  renderReviewCards(filtered);
-};
-
-window.editReview = (id) => {
-  state.editingReviewId = id;
-  const review = state.reviews.find(r => r.id === id);
-  if (!review) return;
-  document.getElementById('review-response-status').value = review.response_status || 'pending';
-  document.getElementById('review-response-text').value = review.response_text || '';
-  openModal('modal-review');
-};
-
-// ============================================
-// MODALS
-// ============================================
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-function openLeadModal(lead) {
-  state.editingLeadId = lead ? lead.id : null;
-  document.getElementById('modal-lead-title').textContent = lead ? 'Редактировать лид' : 'Новый лид';
-  document.getElementById('lead-name').value = lead?.name || '';
-  document.getElementById('lead-phone').value = lead?.phone || '';
-  document.getElementById('lead-email').value = lead?.email || '';
-  document.getElementById('lead-source').value = lead?.source || '';
-  document.getElementById('lead-interest').value = lead?.product_interest || '';
-  document.getElementById('lead-amount').value = lead?.amount || '';
-  document.getElementById('lead-location').value = lead?.location_id || state.locations[0]?.id || '';
-  document.getElementById('lead-status').value = lead?.status || 'new';
-  document.getElementById('lead-notes').value = lead?.notes || '';
-  openModal('modal-lead');
-}
-
-window.openLeadModal = (lead) => openLeadModal(lead);
-
-function openClientModal() {
-  document.getElementById('client-name').value = '';
-  document.getElementById('client-phone').value = '';
-  document.getElementById('client-email').value = '';
-  document.getElementById('client-avatar').value = 'mama_marina';
-  document.getElementById('client-source').value = '';
-  document.getElementById('client-location').value = state.locations[0]?.id || '';
-  document.getElementById('client-tags').value = '';
-  document.getElementById('client-notes').value = '';
-  openModal('modal-client');
-}
-
-window.openClientModal = openClientModal;
-
-function openDealModal() {
-  const clientSel = document.getElementById('deal-client');
-  const leadSel = document.getElementById('deal-lead');
-  clientSel.innerHTML = '<option value="">— выберите клиента —</option>';
-  leadSel.innerHTML = '<option value="">— выберите лид —</option>';
-  state.clients.forEach(c => clientSel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
-  state.leads.forEach(l => leadSel.innerHTML += `<option value="${l.id}">${l.name}</option>`);
-
-  document.getElementById('deal-product').value = 'session_60';
-  document.getElementById('deal-amount').value = '';
-  document.getElementById('deal-location').value = state.locations[0]?.id || '';
-  document.getElementById('deal-status').value = 'pending';
-  document.getElementById('deal-scheduled').value = '';
-  document.getElementById('deal-participants').value = '4';
-  document.getElementById('deal-notes').value = '';
-  openModal('modal-deal');
-}
-
-window.openDealModal = openDealModal;
-
-function setupModals() {
-  // Lead save
-  document.getElementById('btn-save-lead').onclick = async () => {
-    const data = {
-      name: document.getElementById('lead-name').value,
-      phone: document.getElementById('lead-phone').value || null,
-      email: document.getElementById('lead-email').value || null,
-      source: document.getElementById('lead-source').value || null,
-      product_interest: document.getElementById('lead-interest').value || null,
-      amount: parseFloat(document.getElementById('lead-amount').value) || null,
-      location_id: document.getElementById('lead-location').value || null,
-      status: document.getElementById('lead-status').value,
-      notes: document.getElementById('lead-notes').value || null
-    };
-    if (!data.name) return alert('Введите имя');
-    if (state.editingLeadId) {
-      await sb.from('leads').update(data).eq('id', state.editingLeadId);
-    } else {
-      await sb.from('leads').insert(data);
-    }
-    closeModal('modal-lead');
-    await loadLeads();
-    render();
-  };
-
-  // Client save
-  document.getElementById('btn-save-client').onclick = async () => {
-    const data = {
-      name: document.getElementById('client-name').value,
-      phone: document.getElementById('client-phone').value || null,
-      email: document.getElementById('client-email').value || null,
-      avatar_type: document.getElementById('client-avatar').value,
-      source: document.getElementById('client-source').value || null,
-      location_id: document.getElementById('client-location').value || null,
-      tags: document.getElementById('client-tags').value ? document.getElementById('client-tags').value.split(',').map(t=>t.trim()) : [],
-      notes: document.getElementById('client-notes').value || null
-    };
-    if (!data.name) return alert('Введите имя');
-    await sb.from('clients').insert(data);
-    closeModal('modal-client');
-    await loadClients();
-    render();
-  };
-
-  // Deal save
-  document.getElementById('btn-save-deal').onclick = async () => {
-    const data = {
-      lead_id: document.getElementById('deal-lead').value || null,
-      client_id: document.getElementById('deal-client').value || null,
-      product: document.getElementById('deal-product').value,
-      amount: parseFloat(document.getElementById('deal-amount').value) || null,
-      location_id: document.getElementById('deal-location').value,
-      status: document.getElementById('deal-status').value,
-      scheduled_at: document.getElementById('deal-scheduled').value || null,
-      participants_count: parseInt(document.getElementById('deal-participants').value) || null,
-      notes: document.getElementById('deal-notes').value || null
-    };
-    if (!data.client_id) return alert('Выберите клиента');
-    await sb.from('deals').insert(data);
-    closeModal('modal-deal');
-    await loadDeals();
-    render();
-  };
-
-  // Review save
-  document.getElementById('btn-save-review').onclick = async () => {
-    const data = {
-      response_status: document.getElementById('review-response-status').value,
-      response_text: document.getElementById('review-response-text').value || null
-    };
-    await sb.from('reviews').update(data).eq('id', state.editingReviewId);
-    closeModal('modal-review');
-    await loadReviews();
-    render();
-  };
-}
-
-// ============================================
-// HELPERS
-// ============================================
-function formatDate(d) {
-  if (!d) return '—';
-  const dt = new Date(d);
-  return dt.toLocaleDateString('ru-RU', {day:'numeric', month:'short'});
-}
-
-// ============================================
-// START
-// ============================================
-init();
-</script>
-</body>
-</html>
+        <button class="btn btn-secondary btn-sm" style="margin-left:8px" o
