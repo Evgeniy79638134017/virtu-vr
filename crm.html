@@ -819,4 +819,412 @@ function renderReviewCards(reviews) {
         <span class="status-dot" style="background:${statusColor}"></span>
         <span style="color:${statusColor};font-weight:600">${statusLabel}</span>
         ${r.response_status === 'responded' && r.response_text ? `<span style="margin-left:auto;color:#4fc3f7;font-size:11px">✓ Ответ дан</span>` : ''}
-        <button class="btn btn-secondary btn-sm" style="margin-left:8px" o
+        <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="editReview('${r.id}')">Ответить</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.filterReviewStatus = (v) => {
+  let filtered = state.reviews;
+  if (v === 'received') filtered = state.reviews.filter(r => r.rating);
+  else if (v === 'pending') filtered = state.reviews.filter(r => !r.rating || r.response_status === 'pending');
+  else if (v === 'responded') filtered = state.reviews.filter(r => r.response_status === 'responded');
+  renderReviewCards(filtered);
+};
+
+window.editReview = (id) => {
+  state.editingReviewId = id;
+  const review = state.reviews.find(r => r.id === id);
+  if (!review) return;
+  document.getElementById('review-response-status').value = review.response_status || 'pending';
+  document.getElementById('review-response-text').value = review.response_text || '';
+  openModal('modal-review');
+};
+
+// ============================================
+// MODALS
+// ============================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openLeadModal(lead) {
+  state.editingLeadId = lead ? lead.id : null;
+  document.getElementById('modal-lead-title').textContent = lead ? 'Редактировать лид' : 'Новый лид';
+  document.getElementById('lead-name').value = lead?.name || '';
+  document.getElementById('lead-phone').value = lead?.phone || '';
+  document.getElementById('lead-email').value = lead?.email || '';
+  document.getElementById('lead-source').value = lead?.source || '';
+  document.getElementById('lead-interest').value = lead?.product_interest || '';
+  document.getElementById('lead-amount').value = lead?.amount || '';
+  document.getElementById('lead-location').value = lead?.location_id || state.locations[0]?.id || '';
+  document.getElementById('lead-status').value = lead?.status || 'new';
+  document.getElementById('lead-notes').value = lead?.notes || '';
+  openModal('modal-lead');
+}
+
+window.openLeadModal = (lead) => openLeadModal(lead);
+
+function openClientModal() {
+  document.getElementById('client-name').value = '';
+  document.getElementById('client-phone').value = '';
+  document.getElementById('client-email').value = '';
+  document.getElementById('client-avatar').value = 'mama_marina';
+  document.getElementById('client-source').value = '';
+  document.getElementById('client-location').value = state.locations[0]?.id || '';
+  document.getElementById('client-tags').value = '';
+  document.getElementById('client-notes').value = '';
+  openModal('modal-client');
+}
+
+window.openClientModal = openClientModal;
+
+function openDealModal() {
+  const clientSel = document.getElementById('deal-client');
+  const leadSel = document.getElementById('deal-lead');
+  clientSel.innerHTML = '<option value="">— выберите клиента —</option>';
+  leadSel.innerHTML = '<option value="">— выберите лид —</option>';
+  state.clients.forEach(c => clientSel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
+  state.leads.forEach(l => leadSel.innerHTML += `<option value="${l.id}">${l.name}</option>`);
+
+  document.getElementById('deal-product').value = 'session_60';
+  document.getElementById('deal-amount').value = '';
+  document.getElementById('deal-location').value = state.locations[0]?.id || '';
+  document.getElementById('deal-status').value = 'pending';
+  document.getElementById('deal-scheduled').value = '';
+  document.getElementById('deal-participants').value = '4';
+  document.getElementById('deal-notes').value = '';
+  openModal('modal-deal');
+}
+
+window.openDealModal = openDealModal;
+
+function setupModals() {
+  // Lead save
+  document.getElementById('btn-save-lead').onclick = async () => {
+    const data = {
+      name: document.getElementById('lead-name').value,
+      phone: document.getElementById('lead-phone').value || null,
+      email: document.getElementById('lead-email').value || null,
+      source: document.getElementById('lead-source').value || null,
+      product_interest: document.getElementById('lead-interest').value || null,
+      amount: parseFloat(document.getElementById('lead-amount').value) || null,
+      location_id: document.getElementById('lead-location').value || null,
+      status: document.getElementById('lead-status').value,
+      notes: document.getElementById('lead-notes').value || null
+    };
+    if (!data.name) return alert('Введите имя');
+    if (state.editingLeadId) {
+      await sb.from('leads').update(data).eq('id', state.editingLeadId);
+    } else {
+      await sb.from('leads').insert(data);
+    }
+    closeModal('modal-lead');
+    await loadLeads();
+    render();
+  };
+
+  // Client save
+  document.getElementById('btn-save-client').onclick = async () => {
+    const data = {
+      name: document.getElementById('client-name').value,
+      phone: document.getElementById('client-phone').value || null,
+      email: document.getElementById('client-email').value || null,
+      avatar_type: document.getElementById('client-avatar').value,
+      source: document.getElementById('client-source').value || null,
+      location_id: document.getElementById('client-location').value || null,
+      tags: document.getElementById('client-tags').value ? document.getElementById('client-tags').value.split(',').map(t=>t.trim()) : [],
+      notes: document.getElementById('client-notes').value || null
+    };
+    if (!data.name) return alert('Введите имя');
+    await sb.from('clients').insert(data);
+    closeModal('modal-client');
+    await loadClients();
+    render();
+  };
+
+  // Deal save
+  document.getElementById('btn-save-deal').onclick = async () => {
+    const data = {
+      lead_id: document.getElementById('deal-lead').value || null,
+      client_id: document.getElementById('deal-client').value || null,
+      product: document.getElementById('deal-product').value,
+      amount: parseFloat(document.getElementById('deal-amount').value) || null,
+      location_id: document.getElementById('deal-location').value,
+      status: document.getElementById('deal-status').value,
+      scheduled_at: document.getElementById('deal-scheduled').value || null,
+      participants_count: parseInt(document.getElementById('deal-participants').value) || null,
+      notes: document.getElementById('deal-notes').value || null
+    };
+    if (!data.client_id) return alert('Выберите клиента');
+    await sb.from('deals').insert(data);
+    closeModal('modal-deal');
+    await loadDeals();
+    render();
+  };
+
+  // Review save
+  document.getElementById('btn-save-review').onclick = async () => {
+    const data = {
+      response_status: document.getElementById('review-response-status').value,
+      response_text: document.getElementById('review-response-text').value || null
+    };
+    await sb.from('reviews').update(data).eq('id', state.editingReviewId);
+    closeModal('modal-review');
+    await loadReviews();
+    render();
+  };
+}
+
+// ============================================
+// HELPERS
+// ============================================
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('ru-RU', {day:'numeric', month:'short'});
+}
+
+// ============================================
+// SLIDE PANEL (amoCRM-style)
+// ============================================
+let slideLead = null;
+
+const LEAD_STATUSES = [
+  {key:'new', label:'Новый'},
+  {key:'contacted', label:'Контакт'},
+  {key:'interested', label:'Интерес'},
+  {key:'booked', label:'Бронь'},
+  {key:'visited', label:'Визит'},
+  {key:'repeat', label:'Повторный'},
+  {key:'lost', label:'Потерян'}
+];
+
+function openSlidePanel(lead) {
+  slideLead = lead;
+  document.getElementById('slide-lead-name').textContent = lead.name;
+  document.getElementById('sl-name').value = lead.name || '';
+  document.getElementById('sl-phone').value = lead.phone || '';
+  document.getElementById('sl-email').value = lead.email || '';
+  document.getElementById('sl-source').value = lead.source || '';
+  document.getElementById('sl-interest').value = lead.product_interest || '';
+  document.getElementById('sl-amount').value = lead.amount || '';
+  document.getElementById('sl-notes').value = lead.notes || '';
+
+  // Location select
+  const locSel = document.getElementById('sl-location');
+  locSel.innerHTML = '<option value="">— все —</option>';
+  state.locations.forEach(loc => {
+    locSel.innerHTML += `<option value="${loc.id}" ${loc.id===lead.location_id?'selected':''}>${loc.name}</option>`;
+  });
+
+  // Status bar
+  const bar = document.getElementById('slide-status-bar');
+  bar.innerHTML = LEAD_STATUSES.map(s =>
+    `<div class="st-step ${s.key===lead.status?'active':''}" onclick="changeLeadStatus('${s.key}')">${s.label}</div>`
+  ).join('');
+
+  // Feed
+  renderFeed(lead);
+
+  document.getElementById('slide-overlay').classList.add('open');
+  document.getElementById('slide-panel').classList.add('open');
+}
+
+function closeSlidePanel() {
+  document.getElementById('slide-overlay').classList.remove('open');
+  document.getElementById('slide-panel').classList.remove('open');
+  slideLead = null;
+}
+
+async function changeLeadStatus(newStatus) {
+  if (!slideLead) return;
+  await sb.from('leads').update({status: newStatus, updated_at: new Date().toISOString()}).eq('id', slideLead.id);
+  slideLead.status = newStatus;
+
+  // Update status bar
+  document.querySelectorAll('#slide-status-bar .st-step').forEach(el => {
+    el.classList.toggle('active', el.textContent === LEAD_STATUSES.find(s=>s.key===newStatus)?.label);
+  });
+
+  // Add to feed
+  await sb.from('interactions').insert({
+    lead_id: slideLead.id,
+    type: 'status_change',
+    channel: 'crm',
+    direction: 'internal',
+    summary: `Статус изменён на "${LEAD_STATUSES.find(s=>s.key===newStatus)?.label}"`
+  });
+  renderFeed(slideLead);
+  await loadLeads();
+  render();
+}
+
+async function saveSlidePanel() {
+  if (!slideLead) return;
+  const data = {
+    name: document.getElementById('sl-name').value,
+    phone: document.getElementById('sl-phone').value || null,
+    email: document.getElementById('sl-email').value || null,
+    source: document.getElementById('sl-source').value || null,
+    product_interest: document.getElementById('sl-interest').value || null,
+    amount: parseFloat(document.getElementById('sl-amount').value) || null,
+    location_id: document.getElementById('sl-location').value || null,
+    notes: document.getElementById('sl-notes').value || null,
+    updated_at: new Date().toISOString()
+  };
+  if (!data.name) return alert('Введите имя');
+  await sb.from('leads').update(data).eq('id', slideLead.id);
+  Object.assign(slideLead, data);
+  document.getElementById('slide-lead-name').textContent = data.name;
+  await loadLeads();
+  render();
+  alert('Сохранено!');
+}
+
+async function convertLeadToClient() {
+  if (!slideLead) return;
+  if (!confirm(`Конвертировать лид "${slideLead.name}" в клиента?`)) return;
+
+  // Determine avatar type from product interest
+  let avatarType = 'mama_marina';
+  if (slideLead.product_interest === 'corporate') avatarType = 'hr_manager';
+  else if (slideLead.product_interest === 'birthday') avatarType = 'mama_marina';
+  else if (slideLead.product_interest === 'quest' || slideLead.product_interest === 'arena') avatarType = 'teen_danya';
+
+  const { data: client, error } = await sb.from('clients').insert({
+    name: slideLead.name,
+    phone: slideLead.phone,
+    email: slideLead.email,
+    source: slideLead.source,
+    avatar_type: avatarType,
+    location_id: slideLead.location_id,
+    notes: `Конвертирован из лида.\n${slideLead.notes || ''}`
+  }).select().single();
+
+  if (error) { alert('Ошибка: ' + error.message); return; }
+
+  // Link lead to client
+  await sb.from('leads').update({
+    client_id: client.id,
+    status: 'visited',
+    updated_at: new Date().toISOString()
+  }).eq('id', slideLead.id);
+
+  // Log interaction
+  await sb.from('interactions').insert({
+    lead_id: slideLead.id,
+    client_id: client.id,
+    type: 'conversion',
+    channel: 'crm',
+    direction: 'internal',
+    summary: 'Лид конвертирован в клиента'
+  });
+
+  await loadLeads();
+  await loadClients();
+  render();
+  closeSlidePanel();
+  alert(`Клиент "${slideLead.name}" создан!`);
+}
+
+async function deleteLead() {
+  if (!slideLead) return;
+  if (!confirm(`Удалить лид "${slideLead.name}"?`)) return;
+  await sb.from('interactions').delete().eq('lead_id', slideLead.id);
+  await sb.from('leads').delete().eq('id', slideLead.id);
+  closeSlidePanel();
+  await loadLeads();
+  render();
+}
+
+function callLead() {
+  if (!slideLead?.phone) return alert('Нет номера телефона');
+  const phone = slideLead.phone.replace(/[^\d+]/g,'');
+  if (phone.startsWith('+') || phone.startsWith('7') || phone.startsWith('8')) {
+    window.open('tel:' + phone);
+  } else {
+    alert('Телефон: ' + slideLead.phone);
+  }
+}
+
+function msgLead() {
+  if (!slideLead?.phone) return alert('Нет контакта');
+  const phone = slideLead.phone;
+  if (phone.startsWith('@')) {
+    window.open('https://t.me/' + phone.slice(1));
+  } else if (phone.startsWith('tg:')) {
+    alert('Telegram ID: ' + phone);
+  } else {
+    const clean = phone.replace(/[^\d]/g,'');
+    window.open('https://wa.me/' + clean);
+  }
+}
+
+async function renderFeed(lead) {
+  const container = document.getElementById('slide-feed');
+  const { data: interactions } = await sb.from('interactions')
+    .select('*')
+    .eq('lead_id', lead.id)
+    .order('created_at', { ascending: false });
+
+  if (!interactions || !interactions.length) {
+    // Parse notes for initial feed
+    const notes = lead.notes || '';
+    const lines = notes.split('\n').filter(l => l.trim());
+    if (lines.length) {
+      container.innerHTML = lines.map(line => {
+        const isTimestamp = line.match(/^\[[\d\-T:]+\]/);
+        return `<div class="feed-item">
+          <div class="feed-time">${lead.created_at ? formatDate(lead.created_at) : ''}</div>
+          <div class="feed-text"><span class="feed-type ft-msg">Сообщение</span>${line}</div>
+        </div>`;
+      }).join('');
+    } else {
+      container.innerHTML = '<div class="feed-empty">Нет событий</div>';
+    }
+    return;
+  }
+
+  container.innerHTML = interactions.map(i => {
+    const typeMap = {
+      status_change: {cls:'ft-status', label:'Статус'},
+      conversion: {cls:'ft-status', label:'Конверсия'},
+      note: {cls:'ft-note', label:'Заметка'},
+      call: {cls:'ft-msg', label:'Звонок'},
+      message: {cls:'ft-msg', label:'Сообщение'}
+    };
+    const t = typeMap[i.type] || {cls:'ft-note', label:i.type};
+    return `<div class="feed-item">
+      <div class="feed-time">${new Date(i.created_at).toLocaleString('ru-RU', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="feed-text"><span class="feed-type ${t.cls}">${t.label}</span>${i.summary || ''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function addFeedNote() {
+  if (!slideLead) return;
+  const input = document.getElementById('feed-note-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  await sb.from('interactions').insert({
+    lead_id: slideLead.id,
+    type: 'note',
+    channel: 'crm',
+    direction: 'internal',
+    summary: text,
+    created_by: 'manager'
+  });
+
+  input.value = '';
+  renderFeed(slideLead);
+}
+
+// ============================================
+// START
+// ============================================
+init();
+</script>
+</body>
+</html>
